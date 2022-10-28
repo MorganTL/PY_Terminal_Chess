@@ -1,4 +1,3 @@
-from functools import cache
 import click
 
 # click docs : https://click.palletsprojects.com/en/8.1.x/utils/
@@ -89,7 +88,7 @@ class game_board():
         pos: string (e.g. "A1")
         to: string (e.g. "B1")
 
-        return True when move is successful, False when pos is empty space
+        return True when move is successful, False when pos has no pieces
         """
 
         piece = self.game_board[pos]
@@ -111,6 +110,7 @@ class game_board():
 
     def move_generator(self, pos: str):
         """
+        Genearte a list of legal moves for the pieces on pos
         pos: string (e.g. "A1")\n
         return a list of legal moves that the pieces can do
         """
@@ -137,7 +137,6 @@ class game_board():
 
         elif piece == "N":
             return self.move_gen_knight(pos)
-
 
     def move_gen_rook(self, pos: str):
         """
@@ -584,7 +583,7 @@ class game_board():
     def is_checkmate(self, piece:list = ["RK", "BK"] ):
         """
         piece: list of piece names, can also work with non king pieces
-        return a list of pos: [["check piece pos","king pos"],["check piece pos","king pos"]]
+        return list: list of pos: [["check piece pos","king pos"],["check piece pos","king pos"]]
         """
         # loop over every space and use move_gen to see whether RK or BK is in the list
         # if so return the move
@@ -601,6 +600,64 @@ class game_board():
 
         return check_pos
 
+    def threat_check(self, pos:str, player_being_target:str):
+        """
+        Check for safety at that tile, can be used for removing king legal moves that check the king\n
+        pos: string of the chess board\n
+        player_being_target: player that are target \n
+        return True when that pos is in kill range
+        """
+
+        for k in self.game_board.keys():
+
+            if self.game_board[k][0] != f"{player_being_target}":
+
+                for m in self.move_generator(k):
+                    if pos in m:
+                        return True
+        return False
+
+    def pawn_promotion_pos(self, player:str):
+        """
+        Detect any pawn that can be promoted\n
+        return list of position of pawn that can be promoted
+        """
+        # Blue at bottom, red on top
+        # scan boundary area for opposite size pawm
+
+        alpha_st = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.size]
+        pawn_2be_promoted = []
+
+        col = 1 if player == "R" else self.size
+
+        for row in alpha_st:
+            if self.game_board[f"{row}{col}"] == f"{player}P":             
+                pawn_2be_promoted += [f"{row}{col}"]
+
+        return pawn_2be_promoted
+        
+    def pawn_promote(self, pos:str, promotion:str):
+        """
+        !!!Dangerous!!! This function does NOT check for pawn promotion condition \n
+        Promote pawn to other pieces\n
+        return bool: True if pawn has successfully promoted
+        """
+        if self.game_board[pos] == "·":
+            return False
+        elif promotion not in ["Q", "N", "R", "B"]:
+            return False
+
+        player = self.game_board[pos][0]
+        self.game_board[pos] = player+promotion
+        return True
+
+
+
+def setup():
+    pass
+
+def function_demo():
+    pass
 
 
 def main():
@@ -612,19 +669,26 @@ def main():
     game.game_board["E4"] = 'RB'
 
     #Blue at bottom, red on top
-    game.fill_pieces_on_board({"BQ": ["C6"], "RR": ["C4", "G8"]})
+    game.fill_pieces_on_board({"BQ": ["C6"], "RR": ["C4", "G8"], "BP":["B8", "H8"]})
     click.secho("-----------------------")
     game.print_board()
+    game.print_board_moves_visualize(game.move_generator("C6"))
+    print(game.pawn_promotion_pos("B"))
 
-    game.move_piece("C6", "A8")
-    game.move_piece("A8", "A7")
-    game.move_piece("A7", "A1")
-    game.move_piece("A1", "H8")
-    game.move_piece("H8", "H1")
+    game.pawn_promote("B8", "Q")
+    game.print_board()
 
-    for m in game.game_board_cache:
-        game.game_board = m
-        game.print_board()
+    # print(game.threat_check("D4", "R"))
+
+    # game.move_piece("C6", "A8")
+    # game.move_piece("A8", "A7")
+    # game.move_piece("A7", "A1")
+    # game.move_piece("A1", "H8")
+    # game.move_piece("H8", "H1")
+
+    # for m in game.game_board_cache:
+    #     game.game_board = m
+    #     game.print_board()
 
 
     # click.secho("-----------------------")
