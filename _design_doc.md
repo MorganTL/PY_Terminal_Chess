@@ -35,10 +35,13 @@
 - TODO:
     - import chess.py game_board and setup while gameloop
 
-## ai_play.py
+## AI_play.py
 - TBD, this will contain the singleplayer chess game
 - TODO:
     - Add DFS algo for AI
 
-## Queen_game.py 
+## queen_game.py 
 - This is the same as in assignment
+
+## warpship_chessboard.py
+- This is simlar to how warship players out but on a chess board?
