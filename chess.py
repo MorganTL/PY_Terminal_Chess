@@ -524,8 +524,8 @@ class game_board():
         if turn > self.cache_size:
             return 0
 
-        self.game_board = self.game_board_cache[-turn].copy
-        self.game_board_cache = self.game_board_cache[:-turn].copy
+        self.game_board = self.game_board_cache[-turn].copy()
+        self.game_board_cache = self.game_board_cache[:-turn].copy()
         return 0
 
 
@@ -582,7 +582,7 @@ class game_board():
 
     def is_checkmate(self, piece:list = ["RK", "BK"] ):
         """
-        piece: list of piece names, can also work with non king pieces
+        piece: list of piece names, can also work with non king pieces\n
         return list: list of pos: [["check piece pos","king pos"],["check piece pos","king pos"]]
         """
         # loop over every space and use move_gen to see whether RK or BK is in the list
@@ -654,7 +654,16 @@ class game_board():
 
 
 def setup():
-    pass
+    game = game_board(8)
+    game.fill_pieces_on_board({"BQ": ["C6"], "RR": ["C4", "G8"], "BP":["B8", "H8"]})
+    game.print_board()
+    game.move_piece("C6", "H8")
+    game.move_piece("H8", "H1")
+    game.move_piece("H1", "A1")
+    # game.move_piece("A1", "A2")
+    game.print_board()
+    game.undo(3)
+    game.print_board()
 
 def function_demo():
     pass
@@ -712,5 +721,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    setup()
 
