@@ -1,6 +1,7 @@
-import chess, click, time
+import src
+import click, time, json
 
-def Title_screen(option = None):
+def draw_title_screen(options_dict:dict):
 
     click.secho(r"""  .oooooo.   oooo                                    
  d8P'  `Y8b  `888
@@ -9,47 +10,148 @@ def Title_screen(option = None):
 888           888   888  888ooo888 `"Y88b.  `"Y88b.  
 `88b    ooo   888   888  888    .o o.  )88b o.  )88b 
  `Y8bood8P'  o888o o888o `Y8bod8P' 8""888P' 8""888P'""", fg="bright_blue")
+    
+    click.secho()
 
-    color = ["bright_white","bright_white", "bright_white", "bright_white"]
-    if option == None or not option.isnumeric() or int(option) > 4:
-        click.secho("1: Local Multiplayer", fg=f"{color[0]}")
-        click.secho("2: Play with AI", fg=f"{color[1]}")
-        click.secho("3: Queens game", fg=f"{color[2]}")
-        click.secho("4: Exit", fg=f"{color[3]}")
+    options_len = len(options_dict)
+
+    for k in range(1,options_len+1):
+        click.secho(f"{k}: {options_dict[k][0]}", fg = options_dict[k][1])
+    
+
+def locate_gamesave(filepath:str):
+    """
+    return True when json save is not empty
+    """
+    try:
+        data = json.load(open(filepath))
+        return any(data)
+    except FileNotFoundError:
         return False
-    else:
-        color[int(option)-1] = "bright_green"
-        click.secho("1: Local Multiplayer", fg=f"{color[0]}")
-        click.secho("2: Play with AI", fg=f"{color[1]}")
-        click.secho("3: Queens game", fg=f"{color[2]}")
-        click.secho("4: Exit", fg=f"{color[3]}")
-        return True
+
 
 def main():
-    click.clear()
-    Title_screen()
-    click.secho("Which mode you want to play(1-4): ", fg="bright_white", nl=False)
-    s = input()
+    # Main menu loop
     while True:
+        
+        local_play_savefile = locate_gamesave("./placeholder.json") #TODO: replace placeholder path
+        ai_play_savefile = locate_gamesave("./src/save_file/ai_play.json")
+
+
+        main_menu_options = {
+            1: ["Local multiplayer", "reset"],
+            2: ["Play with AI", "reset"],
+            3: ["Queens game", "reset"],
+            4: ["AI vs AI", "reset"],
+            5: ["Exit", "reset"],
+        }
+
         click.clear()
-        if Title_screen(s):
+        draw_title_screen(main_menu_options)
+        
+        warning_message = click.style("\n")
+        menu_message =  click.style(f"Which mode you want to play(1-{len(main_menu_options)}): ")
+        message = warning_message + menu_message
+
+        click.secho(message, nl=False)
+        user_input = input()
+        
+        while True:
+            if user_input in map(str, range(1, len(main_menu_options)+1)):
+                main_menu_options[int(user_input)][1] = "green"
+                click.clear()
+                draw_title_screen(main_menu_options)
+                time.sleep(0.5)
+                break
+            warning_message = click.style("\nInvalid input! ", fg = "bright_red")
+            message = warning_message + menu_message
+            click.secho(message, nl=False)
+            user_input = input()
+            
+
+        # !!Important!! Enter game with No sub menu HERE
+        if user_input == str(len(main_menu_options)): # exit
+            click.pause("Press any key to exit...")
             break
-        click.secho("Invalid Input, Enter again (1-4): ", fg="bright_red",nl=False)
-        s = input()
-    time.sleep(0.5)
-    if s == "1":
-        chess.main()
-    elif s == "2":
-        pass
-    elif s == "3":
-        pass
-    elif s == "4":
-        pass
+        elif user_input == "1" and not local_play_savefile: # local play
+            print("local play here :D")  #TODO: add local multipler function
+            continue
+        elif user_input == "2" and not ai_play_savefile: # play with ai
+            src.play_with_AI()
+            continue
+        elif user_input == "3": # queens game
+            print("queens game here") #TODO: add queens game function 
+            continue
+        elif user_input == "4": # ai vs ai mode
+            src.AI_vs_AI()
+            continue
+        
+        sub_menu_options = {
+            1: ["Continue last game", "reset"],
+            2: ["New Game", "reset"],
+            3: ["Back ↩", "reset"],
+        }
+
+        if user_input == "1": # lcoal play
+            game_message = "Local multiplayer"
+        elif user_input == "2": # play with ai
+            game_message = "Play with AI"
+
+
+        click.clear()
+        draw_title_screen(sub_menu_options)
+        
+
+        warning_message = click.style("\n")
+        menu_message =  click.style(f" - Which mode you want to play(1-{len(sub_menu_options)}): ")
+        message = warning_message + game_message + menu_message
+
+        click.secho(message, nl=False)
+        user_input = input()
+        
+        while True:
+            if user_input in map(str, range(1, len(sub_menu_options)+1)):
+                sub_menu_options[int(user_input)][1] = "green"
+                click.clear()
+                draw_title_screen(sub_menu_options)
+                time.sleep(0.5)
+                break
+            warning_message = click.style("\nInvalid input! ", fg = "bright_red")
+            message = warning_message + game_message + menu_message
+            click.secho(message, nl=False)
+            user_input = input()
+        
+        # !!Important!! Enter game with submenu here
+        if game_message == "Local multiplayer":
+            if user_input == "1":
+                print("Local multiplayer -> continue") #TODO: add local multipler function
+                continue
+            elif user_input == "2":
+                print("Local multiplayer -> new game") #TODO: add local multipler function
+                continue
+        elif game_message == "Play with AI":
+            if user_input == "1": # continue from old save file
+                src.play_with_AI(True)
+                continue
+            elif user_input == "2":
+                src.play_with_AI()
+                continue
+
+
+    # s = 0
+    # if s == "1": # PvP
+    #     chess.main()
+    # elif s == "2": # PvAI
+    #     ai_play.main()
+    # elif s == "3":
+    #     pass
+    # elif s == "4":
+    #     pass
 
     # chess.main()
 if __name__ == "__main__":
     main()
-    click.pause()
+    
 
 
 
