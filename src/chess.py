@@ -1,4 +1,4 @@
-import click
+import click, json
 
 # click docs : https://click.palletsprojects.com/en/8.1.x/utils/
 # Type "python chess.py" in terminal to run
@@ -56,32 +56,32 @@ class game_board():
         alphas = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
         alpha_st = " ".join(alphas[:self.size])
-        click.secho(alpha_st.center(self.size*3), fg="bright_white")
+        click.secho(alpha_st.center(self.size*3))
         click.echo()
 
         for i in range(self.size, 0, -1):
 
-            click.secho(f'{i}'.ljust(4), fg="bright_white", nl = False)
+            click.secho(f'{i}'.ljust(4), nl = False)
 
             for j in range(self.size):
                 # Add color to game board and pieces
                 if (self.game_board[(alphas[j])+str(i)]) == "·":
                     click.secho(f'{self.game_board[(alphas[j])+str(i)]} ', fg='green', nl = False)
                 elif len(self.game_board[(alphas[j])+str(i)]) == 1:
-                    click.secho(f'{self.game_board[(alphas[j])+str(i)]} ', fg='bright_white', nl = False)
+                    click.secho(f'{self.game_board[(alphas[j])+str(i)]} ', nl = False)
                 elif (self.game_board[(alphas[j])+str(i)][0]) == "R":
                     click.secho(f'{self.game_board[(alphas[j])+str(i)][1]} ', fg='bright_red', nl = False)
                 elif (self.game_board[(alphas[j])+str(i)][0]) == "B":
                     click.secho(f'{self.game_board[(alphas[j])+str(i)][1]} ', fg='bright_blue', nl = False)
                 # print(self.game_board[(alphas[j])+str(i)],end=" ")
 
-            click.secho(f'{i}'.rjust(3), fg="bright_white")
+            click.secho(f'{i}'.rjust(3))
         click.echo()
-        click.secho(alpha_st.center(self.size*3), fg="bright_white")
+        click.secho(alpha_st.center(self.size*3))
         return 0
 
-
-    def move_piece(self, pos:str, to:str):
+    # modify move_piece and move_gen to allow for external game_board move checking and moving
+    def move_piece(self, pos:str, to:str, game_board: dict = None, cache_size: dict = None):
         """
         !!Dangerous!! This function does not provide movement checking\n
         Teleport piece on "pos" -> "to" and store perious board into game_board_cache
@@ -90,60 +90,71 @@ class game_board():
 
         return True when move is successful, False when pos has no pieces
         """
+        if game_board == None:
+            game_board = self.game_board
+        if cache_size == None:
+            cache_size = self.cache_size
 
-        piece = self.game_board[pos]
+        piece = game_board[pos]
         if piece == "·":
             return False
 
-        self.game_board_cache += [self.game_board.copy()]
 
-        if len(self.game_board_cache) > self.cache_size:
-            self.game_board_cache.pop(0)
+        # Cache game board before move
+        if self.game_board not in self.game_board_cache: 
+            self.game_board_cache += [game_board.copy()]
+            if len(self.game_board_cache) > cache_size:
+                self.game_board_cache.pop(0)       
 
+        #modify game board
+        game_board[to] = piece
+        game_board[pos] = "·"
 
-        self.game_board[to] = piece
-        self.game_board[pos] = "·"
+        # save current board to json file
+        if game_board == self.game_board: 
+            data = {"game_board": self.game_board.copy(), "AI_side" : self.AI_side}
+            json.dump(data, open("./src/save_file/chess.json", "w"))
         return True
 
-
-        pass
-
-    def move_generator(self, pos: str):
+    def move_generator(self, pos: str, game_board:dict = None):
         """
         Genearte a list of legal moves for the pieces on pos
         pos: string (e.g. "A1")\n
         return a list of legal moves that the pieces can do
         """
-        if (self.game_board[pos]) == "·":
+        if game_board == None:
+            game_board = self.game_board
+
+        if (game_board[pos]) == "·":
             return []
-        piece = self.game_board[pos][1]
+        piece = game_board[pos][1]
 
         # click.secho(f"At {pos}, there is {piece}", fg="green")
 
         if piece == "R":
-            return self.move_gen_rook(pos)
+            return self.move_gen_rook(pos, game_board)
 
         elif piece == "B":
-            return self.move_gen_bishop(pos)
+            return self.move_gen_bishop(pos, game_board)
 
         elif piece == "Q":
-            return self.move_gen_bishop(pos) + self.move_gen_rook(pos)
+            return self.move_gen_bishop(pos, game_board) + self.move_gen_rook(pos, game_board)
 
         elif piece == "K":
-            return self.move_gen_king(pos)
+            return self.move_gen_king(pos, game_board)
 
         elif piece == "P":
-            return self.move_gen_pawn(pos)
+            return self.move_gen_pawn(pos, game_board)
 
         elif piece == "N":
-            return self.move_gen_knight(pos)
+            return self.move_gen_knight(pos, game_board)
 
-    def move_gen_rook(self, pos: str):
+    def move_gen_rook(self, pos: str, game_board:dict):
         """
         pos: string (e.g. "A1")\n
         return a list of legal move (include tile of enemy)
         """
-        player = self.game_board[pos][0]
+        player = game_board[pos][0]
         alpha_st = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.size]
         moves = []
 
@@ -156,10 +167,10 @@ class game_board():
             if x == pos[0]:
                 break
 
-            if self.game_board[f"{x}{pos[1]}"] == "·":
+            if game_board[f"{x}{pos[1]}"] == "·":
                 temp_moves.append(f"{x}{pos[1]}")
 
-            elif self.game_board[f"{x}{pos[1]}"][0] == player:
+            elif game_board[f"{x}{pos[1]}"][0] == player:
                 temp_moves = []
 
             else:
@@ -174,10 +185,10 @@ class game_board():
             if x == pos[0]:
                 break
 
-            if self.game_board[f"{x}{pos[1]}"] == "·":
+            if game_board[f"{x}{pos[1]}"] == "·":
                 temp_moves.append(f"{x}{pos[1]}")
 
-            elif self.game_board[f"{x}{pos[1]}"][0] == player:
+            elif game_board[f"{x}{pos[1]}"][0] == player:
                 temp_moves = []
 
             else:
@@ -196,10 +207,10 @@ class game_board():
             if y == pos[1]:
                 break
 
-            if self.game_board[f"{pos[0]}{y}"] == "·":
+            if game_board[f"{pos[0]}{y}"] == "·":
                 temp_moves.append(f"{pos[0]}{y}")
 
-            elif self.game_board[f"{pos[0]}{y}"][0] == player:
+            elif game_board[f"{pos[0]}{y}"][0] == player:
                 temp_moves = []
 
             else:
@@ -214,10 +225,10 @@ class game_board():
             if y == pos[1]:
                 break
 
-            if self.game_board[f"{pos[0]}{y}"] == "·":
+            if game_board[f"{pos[0]}{y}"] == "·":
                 temp_moves.append(f"{pos[0]}{y}")
 
-            elif self.game_board[f"{pos[0]}{y}"][0] == player:
+            elif game_board[f"{pos[0]}{y}"][0] == player:
                 temp_moves = []
 
             else:
@@ -227,12 +238,12 @@ class game_board():
         moves += temp_moves[::-1]
         return moves
 
-    def move_gen_bishop(self, pos: str):
+    def move_gen_bishop(self, pos: str, game_board:dict):
         """
         pos: string (e.g. "A1")\n
         return a list of legal move (include tile of enemy)
         """
-        player = self.game_board[pos][0]
+        player = game_board[pos][0]
         alpha_st = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.size]
         moves = []
 
@@ -246,10 +257,10 @@ class game_board():
         while (pos0_index >= 0) and (pos1_index >= 1):
             # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
 
-            if self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
+            if game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
                 temp_moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
-            elif self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] == player:
+            elif game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] == player:
                 break
 
             else:
@@ -266,10 +277,10 @@ class game_board():
         while (pos0_index >= 0) and (pos1_index <= self.size):
             # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
 
-            if self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
+            if game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
                 temp_moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
-            elif self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] == player:
+            elif game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] == player:
                 break
 
             else:
@@ -285,10 +296,10 @@ class game_board():
         pos1_index = int(pos[1])-1
         while (pos0_index < self.size) and (pos1_index >= 1):
 
-            if self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
+            if game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
                 temp_moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
-            elif self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] == player:
+            elif game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] == player:
                 break
 
             else:
@@ -304,10 +315,10 @@ class game_board():
         pos1_index = int(pos[1])+1
         while (pos0_index < self.size) and (pos1_index <= self.size):
 
-            if self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
+            if game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
                 temp_moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
-            elif self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] == player:
+            elif game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] == player:
                 break
 
             else:
@@ -319,7 +330,7 @@ class game_board():
 
         return moves
 
-    def move_gen_king(self, pos: str):
+    def move_gen_king(self, pos: str, game_board:dict):
         """
         pos: string (e.g. "A1")\n
         return a list of legal move (include tile of enemy)
@@ -327,7 +338,7 @@ class game_board():
 
         inside_board = lambda pos0, pos1: (pos0>=0) and (pos0<self.size) and (pos1>=1) and (pos1<=self.size)
 
-        player = self.game_board[pos][0]
+        player = game_board[pos][0]
         alpha_st = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.size]
         moves = []
 
@@ -341,54 +352,54 @@ class game_board():
         # 🡐
         pos0_index -= 1
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡔
         pos1_index += 1
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡑
         pos0_index += 1
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡕
         pos0_index += 1
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡒
         pos1_index -= 1
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡖
         pos1_index -= 1
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡓
         pos0_index -= 1
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡗
         pos0_index -= 1
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         return moves
 
-    def move_gen_pawn(self, pos: str):
+    def move_gen_pawn(self, pos: str, game_board:dict):
         """
         Blue pawn can only move up, vice versa\n
         pos: string (e.g. "A1")\n
@@ -398,7 +409,7 @@ class game_board():
 
         inside_board = lambda pos0, pos1: (pos0>=0) and (pos0<self.size) and (pos1>=1) and (pos1<=self.size)
 
-        player = self.game_board[pos][0]
+        player = game_board[pos][0]
         alpha_st = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.size]
         moves = []
 
@@ -412,28 +423,28 @@ class game_board():
         # forward (up or down)
         # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
         pos1_index += 1 if player == "B" else -1
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # capture diagonal enemy
         pos0_index -= 1 # 🡐
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] not in f"·{player}":
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] not in f"·{player}":
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
         pos0_index += 2 # 🡒
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] not in f"·{player}":
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] not in f"·{player}":
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # forward twice (up or down) if in init position
         pos0_index = alpha_st.find(pos[0])
         pos1_index += 1 if player == "B" else -1
 
-        if (pos in self.pieces_init_pos[self.game_board[pos]]):
-            if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
+        if (pos in self.pieces_init_pos[game_board[pos]]):
+            if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"] == "·":
                 moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         return moves
 
-    def move_gen_knight(self, pos: str):
+    def move_gen_knight(self, pos: str, game_board:dict):
         """
         pos: string (e.g. "A1")\n
         return a list of legal move (include tile of enemy)
@@ -441,7 +452,7 @@ class game_board():
 
         inside_board = lambda pos0, pos1: (pos0>=0) and (pos0<self.size) and (pos1>=1) and (pos1<=self.size)
 
-        player = self.game_board[pos][0]
+        player = game_board[pos][0]
         alpha_st = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.size]
         moves = []
 
@@ -456,42 +467,42 @@ class game_board():
         # 🡔 2 move
         pos0_index -=2
         pos1_index +=1
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         pos0_index +=1
         pos1_index +=1
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡕 2 move
         pos0_index +=2
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         pos0_index +=1
         pos1_index -=1
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡖 2 move
         pos1_index -=2
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         pos0_index -=1
         pos1_index -=1
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         # 🡗 2 move
         pos0_index-=2
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
         pos0_index -=1
         pos1_index +=1
-        if inside_board(pos0_index, pos1_index) and self.game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
+        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
             moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
 
 
@@ -499,19 +510,60 @@ class game_board():
 
         return moves
 
-
-    def move_gen_castling(self, pos: str):
+    def avail_moves(self, player:str ,game_board:dict = None):
         """
-        TODO: detect move is legal for castling\n
-        pos: string (e.g. "A1")\n
-        return a list of legal move (include tile of enemy)
+        Generate a list of legal moves that player can do \n
+        return a nested list of moves (E.g. [["A2", "A4"], [from_pos, to_pos], ...])
         """
-        # king cannot be moves
-        # rook cannot have moved
-        # king cannot be checked
-        # king cannot moved pass potential check/attack grid
-        pass
 
+        if player not in ["B", "R"]:
+            raise ValueError(f"player variable is not B or R (player was {player})")
+
+        if game_board == None:
+            game_board = self.game_board
+
+        move_set = []
+
+        moveable_pieces = []
+        pawn_pos = []
+        knight_pos = []
+        bishop_pos = []
+        queen_pos = []
+        rook_pos = []
+        king_pos = []
+
+        # Generate a list of moveable pieces
+        for pos in game_board.keys():
+            if game_board[pos][0] != f"{player}":
+                continue
+            if game_board[pos][1] == "P":
+                pawn_pos += [pos]
+
+            elif game_board[pos][1] == "N":
+                knight_pos += [pos]
+
+            elif game_board[pos][1] == "B":
+                bishop_pos += [pos]
+
+            elif game_board[pos][1] == "Q":
+                queen_pos += [pos]
+
+            elif game_board[pos][1] == "R":
+                rook_pos += [pos]
+
+            elif game_board[pos][1] == "K":
+                king_pos += [pos]
+
+        # prioritize pawn move over others
+        moveable_pieces =   pawn_pos + knight_pos +   bishop_pos +  queen_pos + rook_pos + king_pos
+
+
+        # Get all the moves the pieces can do
+        for from_pos in moveable_pieces:
+            for to_pos in self.move_generator(from_pos, game_board):
+                move_set += [[from_pos, to_pos]]
+
+        return move_set
 
     def undo(self, turn: int):
         """
@@ -545,12 +597,12 @@ class game_board():
         alphas = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
         alpha_st = " ".join(alphas[:self.size])
-        click.secho(alpha_st.center(self.size*3), fg="bright_white")
+        click.secho(alpha_st.center(self.size*3))
         click.echo()
 
         for i in range(self.size, 0, -1):
 
-            click.secho(f'{i}'.ljust(4), fg="bright_white", nl = False)
+            click.secho(f'{i}'.ljust(4), nl = False)
 
             for j in range(self.size):
                 # Add color to game board and pieces
@@ -559,7 +611,7 @@ class game_board():
                 if (temp_game_board[(alphas[j])+str(i)]) == "·":
                     click.secho(f'{temp_game_board[(alphas[j])+str(i)]} ', fg='green', nl = False)
                 elif len(temp_game_board[(alphas[j])+str(i)]) == 1:
-                    click.secho(f'{temp_game_board[(alphas[j])+str(i)]} ', fg='bright_white', nl = False)
+                    click.secho(f'{temp_game_board[(alphas[j])+str(i)]} ', nl = False)
 
                 # For pieces in kill range
                 if (temp_game_board[(alphas[j])+str(i)][0]) == "R" and len((temp_game_board[(alphas[j])+str(i)])) == 3:
@@ -575,9 +627,9 @@ class game_board():
                     click.secho(f'{temp_game_board[(alphas[j])+str(i)][1]} ', fg='bright_blue', nl = False)
                 # print(temp_game_board[(alphas[j])+str(i)],end=" ")
 
-            click.secho(f'{i}'.rjust(3), fg="bright_white")
+            click.secho(f'{i}'.rjust(3))
         click.echo()
-        click.secho(alpha_st.center(self.size*3), fg="bright_white")
+        click.secho(alpha_st.center(self.size*3))
         return 0
 
     def is_checkmate(self, piece:list = ["RK", "BK"] ):
