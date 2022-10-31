@@ -1,4 +1,3 @@
-
 from src.chess import game_board
 
 import click, json, time
@@ -9,6 +8,7 @@ class chess_with_AI(game_board):
     def __init__(self, size: int, cache_size: int = 6, AI_side:str = "B"):
         super().__init__(size, cache_size)
         self.AI_side = AI_side
+        self.AI_depth = 3
         self.AI_last_move = []
 
         # To optimize run time, the Piece-Square Tables are store in the class instead
@@ -82,8 +82,7 @@ class chess_with_AI(game_board):
             "K" : 20000
         }
 
-        self.row_alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.size]
-        self.col_num = list(range(1, self.size))
+
 
 
     def start_game(self, use_save_data = False, Test_mode = False):
@@ -100,17 +99,21 @@ class chess_with_AI(game_board):
             # assume AI already did its move, no need to call AI_turn again
             data = json.load(open("./src/save_file/ai_play.json"))
             self.AI_side = data["AI_side"]
+            self.AI_depth = data["AI_depth"]
             self.game_board = data["game_board"].copy()
         elif Test_mode:
             self.AI_side = "R"
         else:
+            click.clear()
+            self.print_board()
+            self.ask_for_AI_difficulties()
             self.ask_for_player_side()
             #override save data
-            data = {"game_board": self.game_board.copy(), "AI_side" : self.AI_side}
+            data = {"game_board": self.game_board.copy(), "AI_side" : self.AI_side, "AI_depth" : self.AI_depth}
             json.dump(data, open("./src/save_file/ai_play.json", "w"))
             # Blue AI make the first move
             if self.AI_side == "B":
-                self.AI_turn(self.AI_side)
+                self.AI_turn(self.AI_side, self.AI_depth)
         
         # Prepare local variable
         player_name = "Red" if  self.AI_side == "B" else "Blue"
@@ -217,7 +220,7 @@ class chess_with_AI(game_board):
 
                 
 
-            self.AI_turn(self.AI_side)
+            self.AI_turn(self.AI_side, self.AI_depth)
 
             if self.king_is_dead():
                 winner = "AI"
@@ -238,26 +241,46 @@ class chess_with_AI(game_board):
             
         click.pause("Press any key to go back to menu screen...")
 
+    def ask_for_AI_difficulties(self):
+        """
+        Ask for player to choose AI difficulties: beginner, normal, hal9000(secret mode)
+        return 0
+        """
+        click.secho("\nWelcome! Choose the AI difficulties (beginner or normal): ", nl=False)
+        player = input().lower()
+        while True:
+            if player == "beginner":
+                self.AI_depth = 1
+                return 0
+            elif player == "normal":
+                self.AI_depth = 3
+                return 0
+            # Ask for user input again
+            click.secho("\nInvalid input! ",fg = "bright_red", nl=False)
+            click.secho("Choose the AI difficulties (beginner or nomral):  ", nl=False)
+            player = input()
+        return 0
+
+
+
     def ask_for_player_side(self):
         """
         Ask for player to choose a side and set self.AI_side value\n
         return 0
         """
-        click.clear()
-        self.print_board()
         click.secho("\nTips: Blue go first", fg = "bright_green")
-        click.secho("Welcome! Which side you want to play as (R or B): ", nl=False)
-        player = input()
+        click.echo("And which side you want to play as ( "+ click.style("B", fg="blue") + " or " + click.style("R", fg="red") +  " ): ", nl=False)
+        player = input().lower()
         while True:
-            if player == "R" or player == "r":
+            if player == "r":
                 self.AI_side = "B"
                 return 0
-            elif player == "B" or player == "b":
+            elif player == "b":
                 self.AI_side = "R"
                 return 0
             # Ask for user input again
-            click.secho("\nInvalid input!: ",fg = "bright_red")
-            click.secho("Invalid input, which side you want to play as (R or B): ", nl=False)
+            click.secho("\nInvalid input! ",fg = "bright_red", nl=False)
+            click.echo("And which side you want to play as ( "+ click.style("B", fg="blue") + " or " + click.style("R", fg="red") +  " ): ", nl=False)
             player = input()
         return 0
 
@@ -405,7 +428,7 @@ class chess_with_AI(game_board):
 
         # save current board to json file
         if game_board == self.game_board: 
-            data = {"game_board": self.game_board.copy(), "AI_side" : self.AI_side}
+            data = {"game_board": self.game_board.copy(), "AI_side" : self.AI_side, "AI_depth" : self.AI_depth}
             json.dump(data, open("./src/save_file/ai_play.json", "w"))
         return True
 
