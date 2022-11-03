@@ -1,6 +1,7 @@
 import src
 import click, time, json
 
+
 def draw_title_screen(options_dict:dict):
 
     click.secho(r"""  .oooooo.   oooo                                    
@@ -29,19 +30,18 @@ def locate_gamesave(filepath:str):
     except FileNotFoundError:
         return False
 
-
 def main():
     # Main menu loop
     while True:
         
-        local_play_savefile = locate_gamesave("./placeholder.json") #TODO: replace placeholder path
+        local_play_savefile = locate_gamesave("./src/save_file/local_play.json")
         ai_play_savefile = locate_gamesave("./src/save_file/ai_play.json")
-
+        n_queen_savefile = locate_gamesave("./src/save_file/n_queen.json")
 
         main_menu_options = {
             1: ["Local multiplayer", "reset"],
             2: ["Play with AI", "reset"],
-            3: ["Queens game", "reset"],
+            3: ["N Queens Puzzle", "reset"],
             4: ["AI vs AI", "reset"],
             5: ["Exit", "reset"],
         }
@@ -74,18 +74,19 @@ def main():
             click.pause("Press any key to exit...")
             break
         elif user_input == "1" and not local_play_savefile: # local play
-            print("local play here :D")  #TODO: add local multipler function
+            src.play_locally()
             continue
         elif user_input == "2" and not ai_play_savefile: # play with ai
             src.play_with_AI()
             continue
-        elif user_input == "3": # queens game
-            print("queens game here") #TODO: add queens game function 
+        elif user_input == "3" and not n_queen_savefile: # N Queens Puzzlee
+            src.play_n_queen()
             continue
         elif user_input == "4": # ai vs ai mode
             src.AI_vs_AI()
             continue
         
+        # sub_menu start here
         sub_menu_options = {
             1: ["Continue last game", "reset"],
             2: ["New Game", "reset"],
@@ -96,6 +97,8 @@ def main():
             game_message = "Local multiplayer"
         elif user_input == "2": # play with ai
             game_message = "Play with AI"
+        elif user_input == "3": # play with ai
+            game_message = "N Queens Puzzle"
 
 
         click.clear()
@@ -124,31 +127,20 @@ def main():
         # !!Important!! Enter game with submenu here
         if game_message == "Local multiplayer":
             if user_input == "1":
-                print("Local multiplayer -> continue") #TODO: add local multipler function
-                continue
+                src.play_locally(True)
             elif user_input == "2":
-                print("Local multiplayer -> new game") #TODO: add local multipler function
-                continue
+                src.play_locally()
         elif game_message == "Play with AI":
             if user_input == "1": # continue from old save file
                 src.play_with_AI(True)
-                continue
             elif user_input == "2":
                 src.play_with_AI()
-                continue
+        elif game_message == "N Queens Puzzle":
+            if user_input == "1": # continue from old save file
+                src.play_n_queen(8, True)
+            elif user_input == "2":
+                src.play_n_queen()
 
-
-    # s = 0
-    # if s == "1": # PvP
-    #     chess.main()
-    # elif s == "2": # PvAI
-    #     ai_play.main()
-    # elif s == "3":
-    #     pass
-    # elif s == "4":
-    #     pass
-
-    # chess.main()
 if __name__ == "__main__":
     main()
     
