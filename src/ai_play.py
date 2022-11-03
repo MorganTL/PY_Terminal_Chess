@@ -347,7 +347,7 @@ class chess_with_AI(game_board):
         depth: how deep the negamax need to search
         alpha: -∞ for optimizing run time
         beta: +∞ for optimizing run time
-        blue_turn: 1 = blue to move, -1 red turn to move
+        blue_turn: 1 = blue to move, -1 red turn to move\n
         return [eval, [list of moves]]
         """
 
