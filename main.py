@@ -3,6 +3,11 @@ import click, time, json
 
 
 def draw_title_screen(options_dict:dict):
+    """
+    Draw titel screen with options list
+
+    options_dict: {1:["Name for option 1", "foreground_color"], 2:["Name for option 2", "foreground_color"] etc...}
+    """
 
     click.secho(r"""  .oooooo.   oooo                                    
  d8P'  `Y8b  `888
@@ -29,6 +34,71 @@ def locate_gamesave(filepath:str):
         return any(data)
     except FileNotFoundError:
         return False
+
+def sub_menu_loop(user_input:str):
+    """
+    Sub menu has 3 option to choose from
+    1) Continue last game
+    2) New Game
+    3) Go back to main menu
+
+    user_input: 1 = "Local multiplayer", 2 =  "Play with AI", 3 = "N Queens Puzzle"
+    """
+    # sub_menu start here
+    sub_menu_options = {
+        1: ["Continue last game", "reset"],
+        2: ["New Game", "reset"],
+        3: ["Back ↩", "reset"],
+    }
+
+    if user_input == "1": # lcoal play
+        game_message = "Local multiplayer"
+    elif user_input == "2": # play with ai
+        game_message = "Play with AI"
+    elif user_input == "3": # play with ai
+        game_message = "N Queens Puzzle"
+
+
+    click.clear()
+    draw_title_screen(sub_menu_options)
+    
+
+    warning_message = click.style("\n")
+    menu_message =  click.style(f" - Which mode you want to play(1-{len(sub_menu_options)}): ")
+    message = warning_message + game_message + menu_message
+
+    click.secho(message, nl=False)
+    user_input = input()
+    
+    while True:
+        if user_input in map(str, range(1, len(sub_menu_options)+1)):
+            sub_menu_options[int(user_input)][1] = "green"
+            click.clear()
+            draw_title_screen(sub_menu_options)
+            time.sleep(0.5)
+            break
+        warning_message = click.style("\nInvalid input! ", fg = "bright_red")
+        message = warning_message + game_message + menu_message
+        click.secho(message, nl=False)
+        user_input = input()
+    
+    # !!Important!! Enter game with submenu here
+    if game_message == "Local multiplayer":
+        if user_input == "1":
+            src.play_locally(True)
+        elif user_input == "2":
+            src.play_locally()
+    elif game_message == "Play with AI":
+        if user_input == "1": # continue from old save file
+            src.play_with_AI(True)
+        elif user_input == "2":
+            src.play_with_AI()
+    elif game_message == "N Queens Puzzle":
+        if user_input == "1": # continue from old save file
+            src.play_n_queen(8, True)
+        elif user_input == "2":
+            src.play_n_queen()
+
 
 def main():
     # Main menu loop
@@ -86,60 +156,7 @@ def main():
             src.AI_vs_AI()
             continue
         
-        # sub_menu start here
-        sub_menu_options = {
-            1: ["Continue last game", "reset"],
-            2: ["New Game", "reset"],
-            3: ["Back ↩", "reset"],
-        }
-
-        if user_input == "1": # lcoal play
-            game_message = "Local multiplayer"
-        elif user_input == "2": # play with ai
-            game_message = "Play with AI"
-        elif user_input == "3": # play with ai
-            game_message = "N Queens Puzzle"
-
-
-        click.clear()
-        draw_title_screen(sub_menu_options)
-        
-
-        warning_message = click.style("\n")
-        menu_message =  click.style(f" - Which mode you want to play(1-{len(sub_menu_options)}): ")
-        message = warning_message + game_message + menu_message
-
-        click.secho(message, nl=False)
-        user_input = input()
-        
-        while True:
-            if user_input in map(str, range(1, len(sub_menu_options)+1)):
-                sub_menu_options[int(user_input)][1] = "green"
-                click.clear()
-                draw_title_screen(sub_menu_options)
-                time.sleep(0.5)
-                break
-            warning_message = click.style("\nInvalid input! ", fg = "bright_red")
-            message = warning_message + game_message + menu_message
-            click.secho(message, nl=False)
-            user_input = input()
-        
-        # !!Important!! Enter game with submenu here
-        if game_message == "Local multiplayer":
-            if user_input == "1":
-                src.play_locally(True)
-            elif user_input == "2":
-                src.play_locally()
-        elif game_message == "Play with AI":
-            if user_input == "1": # continue from old save file
-                src.play_with_AI(True)
-            elif user_input == "2":
-                src.play_with_AI()
-        elif game_message == "N Queens Puzzle":
-            if user_input == "1": # continue from old save file
-                src.play_n_queen(8, True)
-            elif user_input == "2":
-                src.play_n_queen()
+        sub_menu_loop(user_input)
 
 if __name__ == "__main__":
     main()
