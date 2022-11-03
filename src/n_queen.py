@@ -90,7 +90,7 @@ class n_queen(game_board):
                 for queen in queen_threaten_ls:
                     pos_message += click.style(f"{self.queen_pos[queen][0]} ", fg=self.queen_color[queen[0]])
                 
-                ending_message = f"threten each other ❯"
+                ending_message = f"threaten each other ❯"
                 click.echo( prefix_message + pos_message + ending_message)
                
 
