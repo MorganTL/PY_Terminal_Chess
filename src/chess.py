@@ -1,13 +1,14 @@
-import click, json
+import click
 
 # click docs : https://click.palletsprojects.com/en/8.1.x/utils/
-# Type "python chess.py" in terminal to run
+# This is a package, run any function in this file
 
 class game_board():
 
     def __init__(self, size: int, cache_size: int = 6):
         self.size = size
         self.game_board = self.make_board(size)
+        self.current_turn = "B" 
 
         self.game_board_cache = [] # Does not store current game_board
         self.cache_size = cache_size
@@ -79,42 +80,6 @@ class game_board():
         click.echo()
         click.secho(alpha_st.center(self.size*3))
         return 0
-
-    # modify move_piece and move_gen to allow for external game_board move checking and moving
-    def move_piece(self, pos:str, to:str, game_board: dict = None, cache_size: dict = None):
-        """
-        !!Dangerous!! This function does not provide movement checking\n
-        Teleport piece on "pos" -> "to" and store perious board into game_board_cache
-        pos: string (e.g. "A1")
-        to: string (e.g. "B1")
-
-        return True when move is successful, False when pos has no pieces
-        """
-        if game_board == None:
-            game_board = self.game_board
-        if cache_size == None:
-            cache_size = self.cache_size
-
-        piece = game_board[pos]
-        if piece == "·":
-            return False
-
-
-        # Cache game board before move
-        if self.game_board not in self.game_board_cache: 
-            self.game_board_cache += [game_board.copy()]
-            if len(self.game_board_cache) > cache_size:
-                self.game_board_cache.pop(0)       
-
-        #modify game board
-        game_board[to] = piece
-        game_board[pos] = "·"
-
-        # save current board to json file
-        if game_board == self.game_board: 
-            data = {"game_board": self.game_board.copy(), "AI_side" : self.AI_side}
-            json.dump(data, open("./src/save_file/chess.json", "w"))
-        return True
 
     def move_generator(self, pos: str, game_board:dict = None):
         """
@@ -580,7 +545,6 @@ class game_board():
         self.game_board_cache = self.game_board_cache[:-turn].copy()
         return 0
 
-
     def print_board_moves_visualize(self, moves: list):
         """
         Print game board and visualize the legal move of the pieces with terminal coloring\n
@@ -615,7 +579,7 @@ class game_board():
 
                 # For pieces in kill range
                 if (temp_game_board[(alphas[j])+str(i)][0]) == "R" and len((temp_game_board[(alphas[j])+str(i)])) == 3:
-                    click.secho(f'{temp_game_board[(alphas[j])+str(i)][1]}',bg='white', fg='bright_red',bold=True, nl = False)
+                    click.secho(f'{temp_game_board[(alphas[j])+str(i)][1]}',bg='white', fg='bright_red', nl = False)
                     click.secho(' ', nl = False)
                 elif (temp_game_board[(alphas[j])+str(i)][0]) == "B" and len((temp_game_board[(alphas[j])+str(i)])) == 3:
                     click.secho(f'{temp_game_board[(alphas[j])+str(i)][1]}',bg='white',fg='bright_blue',nl = False)
@@ -631,43 +595,6 @@ class game_board():
         click.echo()
         click.secho(alpha_st.center(self.size*3))
         return 0
-
-    def is_checkmate(self, piece:list = ["RK", "BK"] ):
-        """
-        piece: list of piece names, can also work with non king pieces\n
-        return list: list of pos: [["check piece pos","king pos"],["check piece pos","king pos"]]
-        """
-        # loop over every space and use move_gen to see whether RK or BK is in the list
-        # if so return the move
-
-        check_pos = []
-
-        for k in self.game_board.keys():
-
-            for m in self.move_generator(k):
-                # click.secho(f"{self.game_board[k]} -> {m}")
-                if self.game_board[m] in piece:
-                    click.secho(f"{self.game_board[k]} is checking {self.game_board[m]}")
-                    check_pos.append([f"{k}", f"{m}"])
-
-        return check_pos
-
-    def threat_check(self, pos:str, player_being_target:str):
-        """
-        Check for safety at that tile, can be used for removing king legal moves that check the king\n
-        pos: string of the chess board\n
-        player_being_target: player that are target \n
-        return True when that pos is in kill range
-        """
-
-        for k in self.game_board.keys():
-
-            if self.game_board[k][0] != f"{player_being_target}":
-
-                for m in self.move_generator(k):
-                    if pos in m:
-                        return True
-        return False
 
     def pawn_promotion_pos(self, player:str):
         """
@@ -702,76 +629,19 @@ class game_board():
         player = self.game_board[pos][0]
         self.game_board[pos] = player+promotion
         return True
+    
+    def king_is_dead(self,  game_board:dict = None):
+        if game_board == None:
+            game_board = self.game_board
+        
+        Red_king_is_dead = True
+        Blue_king_is_dead = True
 
-
-
-def setup():
-    game = game_board(8)
-    game.fill_pieces_on_board({"BQ": ["C6"], "RR": ["C4", "G8"], "BP":["B8", "H8"]})
-    game.print_board()
-    game.move_piece("C6", "H8")
-    game.move_piece("H8", "H1")
-    game.move_piece("H1", "A1")
-    # game.move_piece("A1", "A2")
-    game.print_board()
-    game.undo(3)
-    game.print_board()
-
-def function_demo():
-    pass
-
-
-def main():
-    # click.clear()
-    game = game_board(8)
-    # click.pause()
-    game.game_board["A8"] = 'RK' #not recommended, use fill_pieces_on_board function instead
-    game.game_board["G2"] = 'BK'
-    game.game_board["E4"] = 'RB'
-
-    #Blue at bottom, red on top
-    game.fill_pieces_on_board({"BQ": ["C6"], "RR": ["C4", "G8"], "BP":["B8", "H8"]})
-    click.secho("-----------------------")
-    game.print_board()
-    game.print_board_moves_visualize(game.move_generator("C6"))
-    print(game.pawn_promotion_pos("B"))
-
-    game.pawn_promote("B8", "Q")
-    game.print_board()
-
-    # print(game.threat_check("D4", "R"))
-
-    # game.move_piece("C6", "A8")
-    # game.move_piece("A8", "A7")
-    # game.move_piece("A7", "A1")
-    # game.move_piece("A1", "H8")
-    # game.move_piece("H8", "H1")
-
-    # for m in game.game_board_cache:
-    #     game.game_board = m
-    #     game.print_board()
-
-
-    # click.secho("-----------------------")
-    # check_ls = game.is_checkmate()
-    # for m in check_ls:
-    #     click.secho("-----------------------")
-    #     game.print_board_moves_visualize(game.move_generator(f"{m[0]}"))
-
-
-
-    # game.print_board_moves_visualize(game.move_generator("G8"))
-    # game.move_piece("C6", "C4")
-    # click.secho("-----------------------")
-    # game.print_board()
-
-    # game.print_board()
-
-    # print(game.game_board)
-    # click.clear()
-
-
-
-if __name__ == "__main__":
-    setup()
+        for pos in game_board.keys():
+            if game_board[pos] == "RK":
+                Red_king_is_dead = False
+            elif game_board[pos] == "BK":
+                Blue_king_is_dead = False
+        
+        return Blue_king_is_dead or Red_king_is_dead
 
