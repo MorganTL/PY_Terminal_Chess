@@ -156,7 +156,7 @@ class local_play(game_board):
         # Empty json save file to prevent continue option in menu screen
         if not Exit_game:
             data = {}
-            json.dump(data, open("./src/save_file/local_play.json", "w")) #TODO:modify json file name
+            json.dump(data, open("./src/save_file/local_play.json", "w"))
             # Print end game message and go back to menu screen
             if winner == "B":
                 message = click.style(f"\nCongregation!") + click.style(f" {self.blue_name} ", fg= "blue") + click.style(f"you won against") + click.style(f" {self.red_name} ", fg= "red")
