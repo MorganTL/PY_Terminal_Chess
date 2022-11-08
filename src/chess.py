@@ -307,60 +307,18 @@ class game_board():
         alpha_st = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.size]
         moves = []
 
-        # left and down 🡗, start from pos
+        # start from top and right 🡔 of pos
         # if tile is a piece:
         # same player -> pop all element
         # enemey -> pop all elemnt + add current position
-        pos0_index = alpha_st.find(pos[0])
-        pos1_index = int(pos[1])
+        pos0_index = alpha_st.find(pos[0]) - 1
+        pos1_index = int(pos[1]) - 1
 
-        # 🡐
-        pos0_index -= 1
-        # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
-            moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
-
-        # 🡔
-        pos1_index += 1
-        # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
-            moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
-
-        # 🡑
-        pos0_index += 1
-        # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
-            moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
-
-        # 🡕
-        pos0_index += 1
-        # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
-            moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
-
-        # 🡒
-        pos1_index -= 1
-        # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
-            moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
-
-        # 🡖
-        pos1_index -= 1
-        # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
-            moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
-
-        # 🡓
-        pos0_index -= 1
-        # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
-            moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
-
-        # 🡗
-        pos0_index -= 1
-        # print(f"POS: {alpha_st[pos0_index]}{pos1_index}")
-        if inside_board(pos0_index, pos1_index) and game_board[f"{alpha_st[pos0_index]}{pos1_index}"][0] != player:
-            moves.append(f"{alpha_st[pos0_index]}{pos1_index}")
+        
+        for i in range(3):
+            for j in range(3): 
+                if inside_board(pos0_index+i, pos1_index+j) and game_board[f"{alpha_st[pos0_index+i]}{pos1_index+j}"][0] != player:
+                    moves.append(f"{alpha_st[pos0_index+i]}{pos1_index+j}")
 
         return moves
 
