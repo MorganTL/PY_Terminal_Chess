@@ -317,7 +317,7 @@ class game_board():
         
         for i in range(3):
             for j in range(3): 
-                if inside_board(pos0_index+i, pos1_index+j) and game_board[f"{alpha_st[pos0_index+i]}{pos1_index+j}"][0] != player:
+                if inside_board(pos0_index+i, pos1_index+j) and game_board[f"{alpha_st[pos0_index+i]}{pos1_index+j}"][0] != player and (pos0_index+i, pos1_index+j) != (pos0_index, pos1_index):
                     moves.append(f"{alpha_st[pos0_index+i]}{pos1_index+j}")
 
         return moves
